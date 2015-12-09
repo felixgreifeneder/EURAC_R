@@ -1,0 +1,7 @@
+* installing *source* package 'myTools' ...
+** R
+** preparing package for lazy loading
+Error in library(date) : there is no package called 'date'
+Error : unable to load R code in package 'myTools'
+ERROR: lazy loading failed for package 'myTools'
+* removing 'X:/Workspaces/GrF/05_Code/R/myTools.Rcheck/myTools'

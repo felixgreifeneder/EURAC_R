@@ -1,0 +1,17 @@
+{
+    "contents" : "#this routine reads a NEST .dim file and returns a structure holding the information\n\nlibrary(date)\n\ntrim <- function (x) gsub(\"^\\\\s+|\\\\s+$\", \"\", x)\n\nread_NEST_DIM <- function(path){\n\n\n  #define structure\n  metadata <- list(DATASET_NAME = as.character(), \n                   ACQUISITION_DATE = as.numeric(), \n                    PASS = as.character(), \n                    POLARIZATION = as.character())\n\n  dim_file <- readLines(con=path)\n\n  #DATASET NAME\n  tmp_line <- dim_file[9]\n  tmp_line <- trim(tmp_line)\n  metadata$DATASET_NAME <- substr(tmp_line, 15, 73)\n\n  #ACQUISITION DATE\n  tmp_line <- dim_file[17]\n  tmp_line <- trim(tmp_line)\n  metadata$ACQUISITION_DATE <- as.numeric(as.date(substr(tmp_line, 34, 44), order=\"dmy\")) - 3653 + 2440588\n\n  #PASS - ASCENDING/DESCENDING\n  tmp_line <- dim_file[123]\n  tmp_line <- trim(tmp_line)\n  metadata$PASS <- substr(tmp_line, 75, 77)\n\n  #POLARIZATION\n  tmp_line <- dim_file[125]\n  tmp_line <- trim(tmp_line)\n  metadata$POLARIZATION <- substr(tmp_line, 76, 77)\n\n  return(metadata)\n}\n",
+    "created" : 1418986241982.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "960346922",
+    "id" : "D633119F",
+    "lastKnownWriteTime" : 1419005723,
+    "path" : "X:/Workspaces/GrF/05_Code/R/myTools/R/read_NEST_DIM.R",
+    "project_path" : "R/read_NEST_DIM.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}

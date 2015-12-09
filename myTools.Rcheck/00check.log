@@ -1,0 +1,18 @@
+* using log directory 'X:/Workspaces/GrF/05_Code/R/myTools.Rcheck'
+* using R version 3.1.1 (2014-07-10)
+* using platform: x86_64-w64-mingw32 (64-bit)
+* using session charset: ISO8859-1
+* using option '--no-build-vignettes'
+* checking for file 'myTools/DESCRIPTION' ... OK
+* checking extension type ... Package
+* this is package 'myTools' version '1.0'
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking whether package 'myTools' can be installed ... ERROR
+Installation failed.
+See 'X:/Workspaces/GrF/05_Code/R/myTools.Rcheck/00install.out' for details.
