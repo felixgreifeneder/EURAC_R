@@ -4,6 +4,7 @@ library("ggplot2")
 library("R.matlab")
 library("zoo")
 source("./Aquarius/parallel_predictions.R")
+library("raster")
 
 #load required data
 #--------------------------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ globcover <- raster("C:/Users/FGreifeneder/Documents/tmp_proc/GLOBCOVER_L4_20090
 insitu.filelist = list.files(path = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_mariette",
                              pattern="*.csv",
                              full.names=T)
-outdir = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_validation/svr_ascat_aqu/"
+outdir = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_validation/svr_ascat_aqu_fltd/"
 
 
 #predict
@@ -115,12 +116,87 @@ save(merged_tss, allData, file=paste(outdir,"tss.dat", sep=""))
 
 
 #plot correlation
+diff = allData$smcts.era - allData$smcts.insitu.mean
+v_era <- which(abs(diff) < 0.05 & allData$lc != 70 & allData$lc != 50 & allData$lc != 220 & allData$lc != 210)
+allData <- allData[v_era,]
+
 allData$lc <- as.factor(allData$lc)
 dev.new(width=7, height=5, noRStudioGD=T)
-ggplot(aes(x=smcts.pred, y=smcts.insitu.mean, colour=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
+ggplot(aes(x=smcts.pred, y=smcts.insitu.mean, colour=lc), data=allData) + 
   geom_point() + 
-  facet_wrap(~lc, ncol=3) +
+  #facet_wrap(~lc, ncol=3) +
   xlab("\nEstimated SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
+  scale_colour_discrete(name="Land-Cover\n", 
+                        labels=c("Cropland (50-70%)/vegetation (20-50%)",
+                                 "Vegetation (50-70%)/cropland (50-70%)",
+                                 "Closed to open mixed forest",
+                                 "Closed to open shrubland",
+                                 "Closed to open grassland",
+                                 "Bare areas")) +
+  theme(aspect.ratio=1) 
+ggsave(filename=paste(outdir,"truevsest.png", sep=""))
+
+#plot era vs insitu
+allData$lc <- as.factor(allData$lc)
+dev.new(width=7, height=5, noRStudioGD=T)
+ggplot(aes(x=smcts.era, y=smcts.insitu.mean, colour=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
+#ggplot(aes(x=smcts.era, y=smcts.insitu.mean, colour=lc), data=allData[v_era,]) + 
+  geom_point() + 
+  xlab("\nERA-Land SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
+  scale_colour_discrete(name="Land-Cover\n", 
+                        labels=c("Cropland (50-70%)/vegetation (20-50%)",
+                                 "Vegetation (50-70%)/cropland (50-70%)",
+                                 "Closed brodleaved deciduous forest",
+                                 "Closed needleleaved forest",
+                                 "Open needleleaved forest",
+                                 "Closed to open mixed forest",
+                                 "Grassland (50-70%)/ forest or shrubland (20-50%)",
+                                 "Closed to open shrubland",
+                                 "Closed to open grassland",
+                                 "Sparse vegetation",
+                                 "Bare areas")) +
+ theme(aspect.ratio=1) 
+ggsave(filename=paste(outdir,"truevsest.png", sep=""))
+
+v_era <- which(abs(diff) < 0.05 & allData$lc != 70 & allData$lc != 50 & allData$lc != 220 & allData$lc != 210)
+allData <- allData[v_era,]
+dev.new(width=7, height=5, noRStudioGD=T)
+ggplot(aes(x=smcts.era, y=smcts.insitu.mean, colour=lc), data=allData[v_era,]) + 
+  geom_point() + 
+  xlab("\nERA-Land SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
+  scale_colour_discrete(name="Land-Cover\n", 
+                        labels=c("Cropland (50-70%)/vegetation (20-50%)",
+                                 "Vegetation (50-70%)/cropland (50-70%)",
+                                 "Open needleleaved forest",
+                                 "Closed to open mixed forest",
+                                 "Grassland (50-70%)/ forest or shrubland (20-50%)",
+                                 "Closed to open shrubland",
+                                 "Closed to open grassland",
+                                 "Sparse vegetation",
+                                 "Bare areas")) +
+  theme(aspect.ratio=1) 
+ggsave(filename=paste(outdir,"truevsest_filter.png", sep=""))
+
+#plot bias
+dev.new(width=7, height=5, noRStudioGD=T)
+ggplot(aes(x=lc, y=bias, fill=lc), data=allData) + 
+  geom_boxplot() + xlab("\nLand-Cover") + ylab("Bias [m3m-3]\n") + ylim(-0.2,0.4) +
+  scale_fill_discrete(name="Land-Cover\n", 
+                        labels=c("Cropland (50-70%)/vegetation (20-50%)",
+                                 "Vegetation (50-70%)/cropland (50-70%)",
+                                 "Closed to open mixed forest",
+                                 "Closed to open shrubland",
+                                 "Closed to open grassland",
+                                 "Bare areas"))
+ggsave(filename=paste(outdir,"boxplot_bias.png", sep=""))
+
+# plot era vs predicted
+
+dev.new(width=7, height=5, noRStudioGD=T)
+# ggplot(aes(x=smcts.era, y=smcts.insitu.mean, colour=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
+ggplot(aes(x=smcts.era, y=smcts.insitu.mean, colour=lc), data=allData[v_era,]) + 
+  geom_point() + 
+  xlab("\nERA-Land SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
   scale_colour_discrete(name="Land-Cover\n", 
                         labels=c("Cropland (50-70%)/vegetation (20-50%)",
                                  "Vegetation (50-70%)/cropland (50-70%)",
@@ -136,23 +212,24 @@ ggplot(aes(x=smcts.pred, y=smcts.insitu.mean, colour=lc), data=allData[which(all
   theme(aspect.ratio=1) 
 ggsave(filename=paste(outdir,"truevsest.png", sep=""))
 
-#plot bias
-dev.new(width=9, height=5, noRStudioGD=T)
-ggplot(aes(x=lc, y=bias, fill=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
-  geom_boxplot() + xlab("\nLand-Cover") + ylab("Bias [m3m-3]\n") + ylim(-0.2,0.4) +
-  scale_fill_discrete(name="Land-Cover\n", 
+v_era <- which(allData$lc != 70 & allData$lc != 50 & allData$lc != 220 & allData$lc != 210 & allData$lc != 200)
+#allData <- allData[v_era,]
+dev.new(width=7, height=5, noRStudioGD=T)
+ggplot(aes(x=smcts.era, y=smcts.pred, colour=lc), data=allData[v_era,]) + 
+  geom_point() + 
+  xlab("\nERA-Land SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
+  scale_colour_discrete(name="Land-Cover\n", 
                         labels=c("Cropland (50-70%)/vegetation (20-50%)",
                                  "Vegetation (50-70%)/cropland (50-70%)",
-                                 "Closed brodleaved deciduous forest",
-                                 "Closed needleleaved forest",
                                  "Open needleleaved forest",
                                  "Closed to open mixed forest",
                                  "Grassland (50-70%)/ forest or shrubland (20-50%)",
                                  "Closed to open shrubland",
                                  "Closed to open grassland",
-                                 "Sparse vegetation",
-                                 "Bare areas"))
-ggsave(filename=paste(outdir,"boxplot_bias.png", sep=""))
+                                 "Sparse vegetation")) +
+  theme(aspect.ratio=1) 
+ggsave(filename=paste(outdir,"ERAvsest_filter.png", sep=""))
+
 
 #metrics insitu vs pred
 sink(paste(outdir, "metrics.txt", sep=""))
@@ -231,13 +308,13 @@ for (i in levels(allData$lc)){
   userows <- which(allData$lc == i)
   cat(i)
   cat(": ")
-  cat(mean(allData$smcts.pred[userows]-allData$smcts.eta[userows], na.rm=T))
+  cat(mean(allData$smcts.pred[userows]-allData$smcts.era[userows], na.rm=T))
   cat("\n")
 }
 cat("\n")
 cat("Overall RMSE")
 cat("\n")
-cat(sqrt(mean((allData$smcts.pred-allData$smcts.eta)^2, na.rm=T)))
+cat(sqrt(mean((allData$smcts.pred-allData$smcts.era)^2, na.rm=T)))
 cat("\n")
 cat("RMSE by LC")
 cat("\n")
@@ -245,7 +322,7 @@ for (i in levels(allData$lc)){
   userows <- which(allData$lc == i)
   cat(i)
   cat(": ")
-  cat(sqrt(mean((allData$smcts.pred[userows]-allData$smcts.eta[userows])^2, na.rm=T)))
+  cat(sqrt(mean((allData$smcts.pred[userows]-allData$smcts.era[userows])^2, na.rm=T)))
   cat("\n")
 }
 cat("\n")

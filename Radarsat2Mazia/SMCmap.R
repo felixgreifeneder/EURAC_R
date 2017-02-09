@@ -27,15 +27,35 @@ file.copy(aspectpath, paste(workdir, basename(aspectpath), sep=""))
 aspectpath <- paste(workdir, basename(aspectpath), sep="")
 aspect <- raster(aspectpath)
 
+#load land-cover
+lcpath <- "X:/Workspaces/GrF/01_Data/ANCILLARY/LAND_COVER_ST/LandUseMazia_tif_latlon.tif"
+file.copy(lcpath, paste(workdir, basename(lcpath), sep=""))
+lcpath <- paste(workdir, basename(lcpath), sep="")
+lc <- raster(lcpath)
+
+
 #crop datasets
 ROIext <- extent(10.51, 10.70, 46.634, 46.808)
 rs2hh <- crop(rs2hh, ROIext)
 rs2hv <- crop(rs2hv, ROIext)
 rs2lia <- crop(rs2lia, ROIext)
-dem <- crop(dem, ROIext)
-slope <- crop(slope, ROIext)
-aspect <- crop(aspect, ROIext)
+#resample other datasets to mapth rs2 ds
+#dem <- crop(dem, ROIext)
+#slope <- crop(slope, ROIext)
+#aspect <- crop(aspect, ROIext)
+#lc <- crop(lc, ROIext)
+dem <- resample(dem, rs2hh)
+slope <- resample(slope, rs2hh)
+aspect <- resample(aspect, rs2hh)
+lc <- resample(lc, rs2hh, method="ngb")
 
+#data as matrices
+rs2hhm <- as.matrix(rs2hh)
+rs2hvm <- as.matrix(rs2hv)
+rs2liam <- as.matrix(rs2lia)
+demm <- as.matrix(dem)
+slopem <- as.matrix(slope)
+aspectm <- as.matrix(aspect)
 
 #--------------------------------------------------------------------------------------------------
 #extract data
@@ -51,22 +71,29 @@ df <- data.frame(hh=numeric(),
 
 cntr <- 1
 
-pb <- txtProgressBar(min = 0, max = nrow(rs2hh)*ncol(rs2hh))
+pb <- txtProgressBar(min = 0, max = nrow(rs2hhm)*ncol(rs2hhm))
 
-for (rind in 1:nrow(rs2hh)){
-  for (cind in 1:ncol(rs2hh)){
+for (rind in 1:nrow(rs2hhm)){
+  for (cind in 1:ncol(rs2hhm)){
     
-    setTxtProgressBar(pb, value=cntr)
+    setTxtProgressBar(pb, value=nrow(rs2hhm)*(rind-1) + cind)
     lon <- xFromCol(rs2hh, col=cind)
     lat <- yFromRow(rs2hh, row=rind)
     lonlat <- matrix(c(lon,lat),1,2)
     
-    hh <- rs2hh[rind,cind]
-    hv <- rs2hv[rind,cind]
-    lia <- rs2lia[rind,cind]
-    h <- extract(dem, lonlat)
-    s <- extract(slope, lonlat)
-    a <- extract(aspect, lonlat)
+    #check if pastures or meadows
+    lcp <- lc[rind, cind]
+    if (is.infinite(lcp)) next
+    
+    hh <- rs2hhm[rind,cind]
+    hv <- rs2hvm[rind,cind]
+    lia <- rs2liam[rind,cind]
+    #height
+    h <- demm[rind,cind]
+    #slope
+    s <- slopem[rind,cind]
+    #aspect
+    a <- aspectm[rind,cind]
     r <- rind
     c <- cind
     

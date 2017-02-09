@@ -23,10 +23,10 @@ print("Partitioning data in training and independent test set ...")
 
 set.seed(Sys.time())
 trainIndices <- createDataPartition(CombDs$smc, p=0.8, list=FALSE, times=1)
-#training <- CombDs[trainIndices,]
-#testing <- CombDs[-trainIndices,]
-training <- CombDs
-testing <- CombDs
+training <- CombDs[trainIndices,]
+testing <- CombDs[-trainIndices,]
+#training <- CombDs
+#testing <- CombDs
 
 #--------------------------------------------------------------------------------------------------
 #Training
@@ -60,8 +60,8 @@ save(SVRtuning, file="./Radarsat2Mazia/svrModel.dat")
 
 
 print("Overall performance based on full testset:")
-#SMCpredicted <- predict(tunedModel, testset)
-SMCpredicted <- parallel_predictions(tunedModel, testing)
+SMCpredicted <- predict(tunedModel, testing)
+#SMCpredicted <- parallel_predictions(tunedModel, testing)
 error <- sqrt(mean((testing$smc - SMCpredicted)^2))
 r2 <- cor(testing$smc, y=SMCpredicted, method="pearson")^2
 print(paste("Error:",error,"R2:",r2))

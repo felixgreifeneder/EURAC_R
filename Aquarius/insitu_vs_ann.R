@@ -17,7 +17,7 @@ globcover <- raster("C:/Users/FGreifeneder/Documents/tmp_proc/GLOBCOVER_L4_20090
 insitu.filelist = list.files(path = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_mariette",
                              pattern="*.csv",
                              full.names=T)
-outdir = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_validation/ann_ascat_aqu/"
+outdir = "C:/Users/FGreifeneder/Documents/tmp_proc/SCA_paper/insitu_validation/ann_ascat_aqu_fltd/"
 
 
 #load ann dataset
@@ -114,43 +114,34 @@ save(merged_tss, allData, file=paste(outdir,"tss.dat", sep=""))
 
 
 #plot correlation
+diff = allData$smcts.era - allData$smcts.insitu.mean
+v_era <- which(abs(diff) < 0.05 & allData$lc != 70 & allData$lc != 50 & allData$lc != 220 & allData$lc != 210)
+allData <- allData[v_era,]
+
+
 allData$lc <- as.factor(allData$lc)
 dev.new(width=7, height=5, noRStudioGD=T)
-ggplot(aes(x=smcts.pred, y=smcts.insitu.mean, colour=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
+ggplot(aes(x=smcts.pred, y=smcts.insitu.mean, colour=lc), data=allData) + 
   geom_point() + 
-  facet_wrap(~lc, ncol=3) +
+ # facet_wrap(~lc, ncol=3) +
   xlab("\nEstimated SMC [m3m-3]") + ylab("In-Situ SMC [m3m-3] \n") + 
   scale_colour_discrete(name="Land-Cover\n", 
                         labels=c("Cropland (50-70%)/vegetation (20-50%)",
                                  "Vegetation (50-70%)/cropland (50-70%)",
-                                 "Closed brodleaved deciduous forest",
-                                 "Closed needleleaved forest",
-                                 "Open needleleaved forest",
-                                 "Closed to open mixed forest",
-                                 "Grassland (50-70%)/ forest or shrubland (20-50%)",
                                  "Closed to open shrubland",
-                                 "Closed to open grassland",
-                                 "Sparse vegetation",
-                                 "Bare areas")) +
+                                 "Closed to open grassland")) +
   theme(aspect.ratio=1) 
 ggsave(filename=paste(outdir,"truevsest.png", sep=""))
 
 #plot bias
-dev.new(width=9, height=5, noRStudioGD=T)
-ggplot(aes(x=lc, y=bias, fill=lc), data=allData[which(allData$lc != 220 & allData$lc != 210),]) + 
+dev.new(width=7, height=5, noRStudioGD=T)
+ggplot(aes(x=lc, y=bias, fill=lc), data=allData) + 
   geom_boxplot() + xlab("\nLand-Cover") + ylab("Bias [m3m-3]\n") + ylim(-0.2,0.4) +
   scale_fill_discrete(name="Land-Cover\n", 
                         labels=c("Cropland (50-70%)/vegetation (20-50%)",
                                  "Vegetation (50-70%)/cropland (50-70%)",
-                                 "Closed brodleaved deciduous forest",
-                                 "Closed needleleaved forest",
-                                 "Open needleleaved forest",
-                                 "Closed to open mixed forest",
-                                 "Grassland (50-70%)/ forest or shrubland (20-50%)",
                                  "Closed to open shrubland",
-                                 "Closed to open grassland",
-                                 "Sparse vegetation",
-                                 "Bare areas"))
+                                 "Closed to open grassland"))
 ggsave(filename=paste(outdir,"boxplot_bias.png", sep=""))
 
 #metrics insitu vs pred
@@ -203,12 +194,12 @@ cat("\n")
 
 sink()
 
-#metrics insitu vs pred
-sink(paste(outdir, "metrics.txt", sep=""))
+#metrics era vs pred
+sink(paste(outdir, "metrics_era.txt", sep=""))
 
 cat("Overall correlation")
 cat("\n")
-cat(cor(allData$smcts.insitu.mean, allData$smcts.pred, use="pairwise.complete.obs"))
+cat(cor(allData$smcts.era, allData$smcts.pred, use="pairwise.complete.obs"))
 cat("\n")
 cat("Correlations by LC")
 cat("\n")
@@ -216,13 +207,13 @@ for (i in levels(allData$lc)){
   userows <- which(allData$lc == i)
   cat(i)
   cat(": ")
-  cat(cor(allData$smcts.insitu.mean[userows], allData$smcts.pred[userows], use="pairwise.complete.obs"))
+  cat(cor(allData$smcts.era[userows], allData$smcts.pred[userows], use="pairwise.complete.obs"))
   cat("\n")
 }
 cat("\n")
 cat("Overall mean bias")
 cat("\n")
-cat(mean(allData$smcts.pred-allData$smcts.insitu.mean, na.rm=T))
+cat(mean(allData$smcts.pred-allData$smcts.era, na.rm=T))
 cat("\n")
 cat("Mean Bias by LC")
 cat("\n")
@@ -230,13 +221,13 @@ for (i in levels(allData$lc)){
   userows <- which(allData$lc == i)
   cat(i)
   cat(": ")
-  cat(mean(allData$smcts.pred[userows]-allData$smcts.insitu.mean[userows], na.rm=T))
+  cat(mean(allData$smcts.pred[userows]-allData$smcts.era[userows], na.rm=T))
   cat("\n")
 }
 cat("\n")
 cat("Overall RMSE")
 cat("\n")
-cat(sqrt(mean((allData$smcts.pred-allData$smcts.insitu.mean)^2, na.rm=T)))
+cat(sqrt(mean((allData$smcts.pred-allData$smcts.era)^2, na.rm=T)))
 cat("\n")
 cat("RMSE by LC")
 cat("\n")
@@ -244,7 +235,7 @@ for (i in levels(allData$lc)){
   userows <- which(allData$lc == i)
   cat(i)
   cat(": ")
-  cat(sqrt(mean((allData$smcts.pred[userows]-allData$smcts.insitu.mean[userows])^2, na.rm=T)))
+  cat(sqrt(mean((allData$smcts.pred[userows]-allData$smcts.era[userows])^2, na.rm=T)))
   cat("\n")
 }
 cat("\n")

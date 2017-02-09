@@ -9,6 +9,7 @@ library("RColorBrewer")
 library("gridExtra")
 source("./Aquarius/parallel_predictions.R")
 library("raster")
+library("Metrics")
 
 
 #------------------------------------------------------------------------------------------------------------
@@ -17,8 +18,8 @@ library("raster")
 
 
 #loading merged Aquarius/ASCAT/SMC dataset
-load("C:/Users/FGreifeneder/Documents/tmp_proc/Aquarius/parameters_global_R")
-load("C:/Users/FGreifeneder/Documents/tmp_proc/Aquarius_with_means/train_test_mean_slope.dat")
+load("X:/Workspaces/GrF/Processing/SCA_paper/era_valdiation_svr/Aquarius/parameters_global_R")
+load("X:/Workspaces/GrF/Processing/SCA_paper/era_valdiation_svr/Aquarius_with_means/train_test_mean_slope.dat")
 
 
 
@@ -70,6 +71,25 @@ SVRtuning <- tune(svm, smc ~ ascatF + ascatFmean + ascatFsd +
 
 tunedModel <- SVRtuning$best.model
 
+
+#caret
+
+ctrl <- trainControl(method="cv", 
+                     number = 5, 
+                     search = "grid",
+                     preProcOptions = c('center','scale'),
+                     allowParallel = F)
+mod <- train(smc ~ ascatF + ascatFmean + ascatFsd + 
+               ascatM + ascatMmean + ascatMsd +
+               ascatA + ascatAmean + ascatAsd,
+             data=trainset,
+             method='svmRadial',
+             tuneLength=5,
+             #tuneGrid = data.frame(C=10^seq(-2,2,len=20), sigma= 10^seq(-2,1,len=20)),
+             trControl=ctrl)
+
+tunedModel <- mod
+
 #------------------------------------------------------------------------------------------------------------
 #TESTING
 #------------------------------------------------------------------------------------------------------------
@@ -79,9 +99,10 @@ tunedModel <- SVRtuning$best.model
 print("Overall performance based on full testset:")
 #SMCpredicted <- predict(tunedModel, testset)
 SMCpredicted <- parallel_predictions(tunedModel, testset)
-error <- sqrt(mean((testset$smc - SMCpredicted)^2))
-r2 <- cor(testset$smc, y=SMCpredicted, method="pearson")^2
-print(paste("Error:",error,"R2:",r2))
+error <- rmse(testset$smc, SMCpredicted)
+#error <- sqrt(mean((testset$smc - SMCpredicted)^2))
+r <- cor(testset$smc, y=SMCpredicted, method="pearson")
+print(paste("Error:",error,"R:",r))
 
 tmp <- data.frame(x=testset$smc, y=SMCpredicted)
 rf <- colorRampPalette(rev(brewer.pal(11,"Spectral")))
@@ -146,6 +167,8 @@ for (LocInd in c(1:nUL)){
 
 #save results
 save(SVRtuning, prediction_performance, file="C:/Users/FGreifeneder/Documents/tmp_proc/Aquarius_with_means/ascat_aqu/SVRmodel_performance.dat")
+
+
 
 #plot global grid with accuracies
 map <- borders("world", colour="gray50", fill="gray50")

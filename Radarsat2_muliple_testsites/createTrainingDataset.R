@@ -5,7 +5,7 @@ library(raster)
 #load data from mobile campaigns
 load("./Radarsat2Mazia/HiResAlp_MobileCampaigns.RData")
 #load table where each campaign day is linked to a radarsat acquisition
-load("./Radarsat2Mazia/insitusarlin.dat")
+load("./Radarsat2_muliple_testsites/insitusarlin.dat")
 
 workdir <- "C:/Users/FGreifeneder/Documents/work/"
 
@@ -50,11 +50,16 @@ for (RowI in 1:nrow(inSituSARlink)){
   RS2hv <- raster(paste(workdir, basename(inSituSARlink$paths[RowI]), sep=""), band=2)
   RS2lia <- raster(paste(workdir, basename(inSituSARlink$paths[RowI]), sep=""), band=3)
   
+  #load NDVI
+  NDVIimg <- raster(inSituSARlink$ndvi[RowI])
+  
   #iterate through field campaign measurements
   inSituList <- which(HiResAlp_MobileCampaigns$date == inSituSARlink$insitu[RowI])
   for (inSituind in inSituList){
     
     tmprow <- data.frame(smc=0.0, hh=0.0, hv=0.0, lia=0.0, height=0.0, slope=0.0, aspect=0.0, ndvi=0.0, lon=0.0, lat=0.0, date="", stringsAsFactors = F)
+    
+    
     #extract data
     lonlat <- matrix(c(HiResAlp_MobileCampaigns$longitude[inSituind], HiResAlp_MobileCampaigns$latitude[inSituind]), 1, 2)
     tmprow$smc <- HiResAlp_MobileCampaigns$SoilMoisture_mean[inSituind]
@@ -67,10 +72,14 @@ for (RowI in 1:nrow(inSituSARlink)){
     tmprow$lia <- extract(RS2lia, 
                           lonlat,
                           layer=3, nl=1)
+    
     tmprow$height <- extract(dem, lonlat)
     tmprow$slope <- extract(slope, lonlat)
     tmprow$aspect <- extract(aspect, lonlat)
-    tmprow$ndvi <- HiResAlp_MobileCampaigns$MODIS.NDVI.mean[inSituind]
+    
+    #tmprow$ndvi <- HiResAlp_MobileCampaigns$MODIS.NDVI.mean[inSituind]
+    tmprow$ndvi <- extract(NDVIimg, lonlat)
+    
     tmprow$lon <- lonlat[1]
     tmprow$lat <- lonlat[2]
     tmprow$date <- HiResAlp_MobileCampaigns$date[inSituind]
@@ -88,4 +97,4 @@ file.remove(dempath)
 file.remove(aspectpath)
 file.remove(slopepath)
 
-save(CombDs, file="./Radarsat2_multiple_testsites/ComDs.dat")
+save(CombDs, file="./Radarsat2_muliple_testsites/ComDs.dat")
